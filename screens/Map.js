@@ -1,9 +1,10 @@
 import React, { Component } from 'react';
 import { Platform, Text, View, ActivityIndicator } from 'react-native';
 import { MapView, Constants, Location, Permissions } from 'expo';
+import { database } from '../firebase/index.js';
 
 export default class Map extends Component {
- state = { location: { coords: {} }, errorMessage: null };
+ state = { location: { coords: {} }, errorMessage: null, markers: [] };
 
  componentWillMount() {
   if (Platform.OS === `android` && !Constants.isDevice) {
@@ -14,10 +15,14 @@ export default class Map extends Component {
    this._getLocationAsync();
   }
  }
+ async componentDidMount() {
+  let markers = await database.ref(`/potholes`).once(`value`);
+  markers = markers.val();
+  this.setState({ markers });
+ }
 
  _getLocationAsync = async () => {
   let { status } = await Permissions.askAsync(Permissions.LOCATION);
-  console.log(status, `status`);
   if (status !== `granted`) {
    this.setState({
     errorMessage: `Permission to access location was denied`,
@@ -27,16 +32,15 @@ export default class Map extends Component {
   this.setState({ location });
  };
 
- handleLongPress(e) {
-  console.log(`longpress`, e.nativeEvent);
- }
+ handleLongPress = e => {
+  database.ref(`/potholes`).push(e.nativeEvent.coordinate);
+  this.setState({ hi: `hi` });
+ };
 
  render() {
   let { latitude, longitude } = this.state.location.coords;
-  console.log(`TCL: Map -> render -> latitude`, latitude);
-  console.log(`TCL: Map -> render -> longitude`, longitude);
-  console.log(this.state.errorMessage, `lkdsfj`);
-  return !this.state.errorMessage ? (
+  let { errorMessage, markers } = this.state;
+  return !errorMessage ? (
    latitude ? (
     <MapView
      style={{ flex: 1 }}
@@ -54,6 +58,15 @@ export default class Map extends Component {
       description="Some description"
       pinColor="blue"
      />
+     {Object.keys(markers).map(key => (
+      <MapView.Marker
+       key={key}
+       coordinate={markers[key]}
+       title="My Marker"
+       description="Some description"
+       pinColor="red"
+      />
+     ))}
     </MapView>
    ) : (
     //conditionally renders if fetched location coordinates are still undefined
@@ -63,7 +76,8 @@ export default class Map extends Component {
     </View>
    )
   ) : (
-   <Text>{this.state.errorMessage}</Text>
+   // conditionally renders if location permission is not granted
+   <Text>{errorMessage}</Text>
   );
  }
 }
