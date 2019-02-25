@@ -17,6 +17,7 @@ export default class Map extends Component {
 
  _getLocationAsync = async () => {
   let { status } = await Permissions.askAsync(Permissions.LOCATION);
+  console.log(status, `status`);
   if (status !== `granted`) {
    this.setState({
     errorMessage: `Permission to access location was denied`,
@@ -34,31 +35,35 @@ export default class Map extends Component {
   let { latitude, longitude } = this.state.location.coords;
   console.log(`TCL: Map -> render -> latitude`, latitude);
   console.log(`TCL: Map -> render -> longitude`, longitude);
-  return latitude ? (
-   <MapView
-    style={{ flex: 1 }}
-    region={{
-     latitude,
-     longitude,
-     latitudeDelta: 0.005,
-     longitudeDelta: 0.0025,
-    }}
-    onLongPress={this.handleLongPress}
-   >
-    <MapView.Marker
-     coordinate={this.state.location.coords}
-     title="My Marker"
-     description="Some description"
-     pinColor="blue"
-    />
-   </MapView>
+  console.log(this.state.errorMessage, `lkdsfj`);
+  return !this.state.errorMessage ? (
+   latitude ? (
+    <MapView
+     style={{ flex: 1 }}
+     region={{
+      latitude,
+      longitude,
+      latitudeDelta: 0.005,
+      longitudeDelta: 0.0025,
+     }}
+     onLongPress={this.handleLongPress}
+    >
+     <MapView.Marker
+      coordinate={this.state.location.coords}
+      title="My Marker"
+      description="Some description"
+      pinColor="blue"
+     />
+    </MapView>
+   ) : (
+    //conditionally renders if fetched location coordinates are still undefined
+    <View>
+     <ActivityIndicator size="large" color="#0000ff" />
+     <Text>Loading Map...</Text>
+    </View>
+   )
   ) : (
-   //conditionally renders while coordinates are being fetched from my location
-
-   <View>
-    <ActivityIndicator size="large" color="#0000ff" />
-    <Text>Loading Map...</Text>
-   </View>
+   <Text>{this.state.errorMessage}</Text>
   );
  }
 }
